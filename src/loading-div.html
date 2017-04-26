@@ -1,0 +1,73 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="../bower_components/iron-input/iron-input.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+
+
+<dom-module id="loading-div">
+  <template>
+    <link rel='stylesheet' href='../bower_components/components-font-awesome/css/font-awesome.css' >
+    <style>
+      :host {
+        z-index: 999;
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+      }
+
+      #loading {
+        color: white;
+        position: absolute;
+        top:0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        width: 100px;
+        height: 100px;
+      }
+    </style>
+    <div>
+      <div id='loading'>Loading<span id='dots'>...</span></div>
+    </div>
+  </template>
+  <script>
+    class LoadingDiv extends Polymer.Element {
+      static get is() { return 'loading-div'; }
+
+      constructor() {
+        super();
+        this.intervalHandler = null;
+        this.counter = 0;
+
+        this.counterLoop = 5;
+        this.intervalPeriod = 300;
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        if (!this.intervalHandler) {
+          var self = this;
+          self.intervalHandler = setInterval(function() {
+            if (++self.counter > self.counterLoop) {
+              self.$.dots.innerHTML = '.';
+              self.counter = 0;
+            } else {
+              self.$.dots.innerHTML = self.$.dots.innerHTML + '.';
+            }
+          }, self.intervalPeriod);
+        }
+      }
+
+      disconnectedCallback() {
+        clearInterval(this.intervalHandler);
+      }
+
+    }
+
+    window.customElements.define(LoadingDiv.is, LoadingDiv);
+  </script>
+</dom-module>

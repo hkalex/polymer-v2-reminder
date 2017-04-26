@@ -1,0 +1,79 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../bower_components/iron-input/iron-input.html">
+
+<link rel="import" href="shared-styles.html">
+<link rel='import' href='./reminder-detail.html'>
+<link rel='import' href='./loading-div.html'>
+<link rel='import' href='../bower_components/polymer/lib/elements/dom-repeat.html'>
+
+<script src='./data/DBFactory.js'></script>
+<script src='./utils/userFactory.js'></script>
+
+
+<dom-module id="my-reminders">
+  <template>
+    <style>
+      
+    </style>
+    <!-- load bootstrap -->
+    <link rel="stylesheet" href="../bower_components/bootstrap/dist/css/bootstrap.css">
+
+    <template is='dom-if' if='{{ loading }}'>
+      <loading-div></loading-div>
+    </template>
+    <div class='container-fluid'>
+      <reminder-detail editing='true' db='{{ db }}' mode='new'></reminder-detail>
+    </div>
+    <div class='container-fluid'>
+      <template is='dom-repeat' items='{{ reminders }}'>
+        <reminder-detail reminder='{{ item }}' db='{{ db }}'></reminder-detail>
+      </template>
+    </div>
+  </template>
+
+  <script>
+    class MyReminders extends Polymer.Element {
+      static get is() { return 'my-reminders'; }
+
+      static get properties() {
+        return {
+          show: Boolean
+        }
+      }
+
+      constructor() {
+        super(); // call the super
+        this.loading = true;
+        this.db = DBFactory()({timeout:1000}); // fake the async call by 1 second delay
+
+        window.__po = window.__po || {};
+        window.__po.reminders = this;
+      }
+
+      connectedCallback(...args) {
+        super.connectedCallback.apply(this, args); // call the super
+        this.reloadData();
+      }
+
+      reloadData(showLoading) {
+        var self = this;
+        if (showLoading) {
+          self.loading = true;
+        }
+        var userId = getUserId();
+        Promise.all([
+          self.db.find('reminders', function(rec) { return rec.owner == userId; }, {timeout: 1000})
+        ]).then(function(data) {
+          self.loading = false;
+          self.reminders = data[0];
+        })
+      }
+
+    }
+
+    
+
+    window.customElements.define(MyReminders.is, MyReminders);
+  </script>
+</dom-module>

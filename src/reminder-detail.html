@@ -1,0 +1,245 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="../bower_components/iron-input/iron-input.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../bower_components/px-polymer-font-awesome/px-polymer-font-awesome.html" />
+
+<script src='./utils/mobile.js'></script>
+<script src='./utils/userFactory.js'></script>
+
+<dom-module id="reminder-detail">
+  <template>
+    <link rel="stylesheet" href="../bower_components/bootstrap/dist/css/bootstrap.css">
+    <style include="shared-styles">
+      .textbox {
+        display: block;
+        width: calc( 100% - 10px);
+        border-top: none;
+        border-left: none;
+        border-right: none;
+      }
+      
+      .error {
+        border-bottom: 1px solid red;
+      }
+      
+      .button {
+        cursor: pointer;
+        margin-left: 0.2rem;
+      }
+      
+      .separator {
+        height: 2px;
+        width: 100%;
+        overflow: hidden;
+        background-color: white;
+        margin: 2px;
+      }
+      
+      .done {
+        text-decoration: line-through
+      }
+
+      .w-full {
+        width: 100%;
+      }
+      
+      .overdue {
+        color: red;
+      }
+    </style>
+
+    <template is='dom-if' if='[[ !editing ]]' id='notEditingTemplate'>
+      <div class='row no-gutters'>
+        <div class='col-4 '>
+          <iron-icon icon="{{checkIcon}}" on-click='doneHandler' class='button'></iron-icon>
+          <iron-icon icon="fa:fa-pencil" on-click='editHandler' class='button'></iron-icon>
+        </div>
+        <div class$='col-8 {{doneCSS}} {{dueCSS}}'>[[reminder.title]]</div>
+      </div>
+      <div class='row no-gutters'>
+        <div class$='col-4 {{doneCSS}} {{dueCSS}}'>[[reminder.dueAt]]</div>
+        <div class$='col-8 {{doneCSS}} {{dueCSS}}'>[[reminder.desc]]</div>
+      </div>
+      <div class='separator' />
+    </template>
+    <template is='dom-if' if='[[ editing ]]' id='editingTemplate' connectedCallback='{{testCallback}}'>
+      <div class='row no-gutters'>
+        <div class='col-4 '>
+          <iron-icon icon="fa:fa-floppy-o" on-click='saveHandler' class='button'></iron-icon>
+          <iron-icon icon="fa:fa-times" on-click='cancelHandler' class='button'></iron-icon>
+          <template is='dom-if' if='[[ showDelete ]]'>
+            <iron-icon icon="fa:fa-trash" on-click='deleteHandler' class='button'></iron-icon>
+          </template>
+        </div>
+        <div class='col-8'>
+          <iron-input bind-value='{{reminder.title}}' class='w-full'>
+            <input is='iron-input' class='textbox' type="text" maxlength=20 name="title" id='title' placeholder="Title" />
+          </iron-input>
+        </div>
+      </div>
+      <div class='row no-gutters'>
+        <div class='col-4'>
+          <iron-input bind-value='{{reminder.dueAt}}' class='w-full'>
+            <input is='iron-input' type='date' name='dueAt' id='dueAt' placeholder='mobile' class='w-full textbox' />
+          </iron-input>
+        </div>
+        <div class='col-8'>
+          <iron-input bind-value='{{reminder.desc}}' class='w-full'>
+            <input is='iron-input' class='textbox' type='text' maxlength=100 name='desc' id='desc' placeholder='Description' />
+          </iron-input>
+        </div>
+      </div>
+      <div class='separator' />
+    </template>
+    </div>
+    <!--<button on-click='testHandler'>Test</button>-->
+  </template>
+
+  <script>
+    class ReminderDetail extends Polymer.Element {
+      static get is() { return 'reminder-detail'; }
+
+      // properties
+      static get properties() {
+        return {
+          reminder: { // the entire object of reminder
+            type: Object,
+            value: {}
+          },
+          editing: {
+            type: Boolean,
+            value: false // set the default value
+          },
+          db: Object,
+          mode: String, // either 'new' or null
+          showDelete: {
+            type: Boolean,
+            value: true
+          },
+          doneCSS: String,
+          checkIcon: {
+            type: String,
+            value: 'fa:fa-square-o'
+          },
+          dueCSS: String
+        }
+      }
+
+      // life-cycles
+      constructor() {
+        super();
+        this.isMobile = window.mobilecheck();
+      }
+
+      connectedCallback(...args) {
+        super.connectedCallback.apply(this, args);
+        this.snapshotReminder();
+        this.showDelete = this.mode !== 'new';
+        this.setReminderDone(this.reminder.doneAt);
+        this.checkDue();
+        console.log('connectedCallback');
+      }
+
+      /* New API */
+      disconnectedCallback(...args) {
+        super.disconnectedCallback.apply(this, args);
+        console.log('disconnectedCallback');
+      }
+
+      attributeChangedCallback(...args) {
+        super.attributeChangedCallback.apply(this, args);
+        console.log('attributeChangedCallback');
+      }
+
+      /* Helpers */
+      snapshotReminder() {
+        this.origReminder = JSON.stringify(this.reminder);
+      }
+      restoreReminder() {
+        this.reminder = JSON.parse(this.origReminder); // restore the original value
+      }
+      clearReminder() {
+        this.reminder = {}
+      }
+      setReminderDone(done) {
+        if (done) {
+          this.reminder.doneAt = new Date();
+          this.doneCSS = 'done';
+          this.checkIcon = 'fa:fa-check-square'
+        } else {
+          this.reminder.doneAt = null;
+          this.doneCSS = null;
+          this.checkIcon = 'fa:fa-square-o';
+        }
+      }
+      checkDue() {
+        var dueAt = this.reminder.dueAt;
+        var now = new Date();
+        if (dueAt instanceof Date && dueAt < now) {
+          this.dueCSS = 'overdue';
+        } else if (typeof dueAt === 'string' && Date.parse(dueAt) < now.getTime()) {
+          this.dueCSS = 'overdue';
+        } else {
+          this.dueCSS = '';
+        }
+
+      }
+
+
+      testHandler(e) {
+        this.showDelete = !this.showDelete;
+      }
+
+      /* Event Handlers */
+      doneHandler(e) {
+        this.set('editing', false);
+        if (this.reminder.id) {
+          this.setReminderDone(!this.reminder.doneAt);
+          this.db.save('reminders', this.reminder);
+        }
+      }
+
+      saveHandler(e) {
+        if (!this.reminder.title) {
+          alert('Title is required');
+          return;
+        }
+        var owner = getUserId();
+        this.reminder.owner = owner;
+        this.db.save('reminders', this.reminder);
+        if (this.mode !== 'new') {
+          this.set('editing', false);
+        } else {
+          this.clearReminder();
+        }
+        window.__po.reminders.reloadData(true); // reload the list;
+        this.checkDue();
+      }
+
+      editHandler(e) {
+        this.set('editing', true);
+      }
+
+      cancelHandler(e) {
+        this.restoreReminder();
+        if (this.mode !== 'new') {
+          this.set('editing', false);
+        }
+      }
+
+      deleteHandler(e) {
+        if (this.mode !== 'new') {
+          var id = this.reminder.id;
+          this.db.delete('reminders', { id });
+          this.set('editing', false);
+        } else {
+          this.restoreReminder();
+        }
+        window.__po.reminders.reloadData(true); // reload the list;
+      }
+    }
+
+    window.customElements.define(ReminderDetail.is, ReminderDetail);
+  </script>
+</dom-module>
