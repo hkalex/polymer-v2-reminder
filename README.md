@@ -6,7 +6,7 @@ It is not easy to make Polymer 2.0 working with existing libraries. Some librari
 
 ## Run on Local
 
-Assume you have install Polymer 2.0 CLI.
+Assume you have installed Polymer 2.0 CLI.
 
 In order to setup your local repository, you have to run the following command first.
 
@@ -28,6 +28,8 @@ If you have installed docker, the following command is to run the Polymer applic
 npm run start-docker
 ```
 
+After the docker container is up, the application is located at `http://localhost:8080`
+
 I am using Docker image `nginx:alpine`, because it is very light-weight and fast. The total size of `nginx:alpine` is only **15.5MB** .
 
-*If something work strangly in the future, please use `nginx:latest` image.*
+*If something doesn't work, please use `nginx:latest` image.*
