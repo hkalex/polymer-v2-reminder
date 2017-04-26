@@ -32,4 +32,4 @@ After the docker container is up, the application is located at `http://localhos
 
 I am using Docker image `nginx:alpine`, because it is very light-weight and fast. The total size of `nginx:alpine` is only **15.5MB** .
 
-*If something doesn't work, please use `nginx:latest` image.*
+*If something doesn't work, please use `nginx:latest` image. The script is located at `scripts/docker_run.sh`*
