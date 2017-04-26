@@ -12,3 +12,6 @@ docker run \
   nginx:alpine
 
 #-v $DIR/../build/default:/usr/share/nginx/html:ro \
+
+# open browser
+open http://localhost:8080
